@@ -10,31 +10,34 @@ int main (void)
         BBB
         DDD
         AAA
-        
+
     Expected output:
         AAA
         BBB
         CCC
         DDD
     */
-    
-    int nlines;			/*number of input lines read */
-    
-    char *word;
-    char **word_list;
 
+    int nlines;			/*number of input lines read */
     scanf("%d\n", &nlines);
-    //TODO: INIT word AND word_list
-    
+
+    char *word; // String that points to a value. Points to a copy of the current word to get its value
+    char **word_list = (char **) malloc(nlines * sizeof(char *)); // Array of strings
+    char new_word[MAX_CHARS]; // Keep track of the new words inputted. Holds the value of the current word
+
     // READ WORDS AND POINT EACH ELEMENT OF WORD_LIST TO A WORD
     for (int i = 0; i < nlines; i++) {
-        //TODO: INSERT YOUR CODE TO FILL word_list WITH THE STD INPUTS 
+        scanf("%s", new_word);
+        word = (char *) malloc(strlen(new_word)-1 * sizeof(char)); // Set word to the length of the new word
+        word = strcpy(word, new_word);  // Copies new_word to word and returns the copied string
+        word_list[i] = word;
     }
-    
+
     qsort_((void **) word_list, 0, nlines - 1, (int (*)(void *, void *)) (strcmp));
-    
-    // PRINT SORTED ELEMENTS: 
+
+    // PRINT SORTED ELEMENTS:
     for (int i = 0; i < nlines; i++) {
+        printf("%s\n", word_list[i]);
     }
 
 }
