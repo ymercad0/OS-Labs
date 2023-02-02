@@ -25,7 +25,7 @@ void sig_sigill(){  // Illegal instruction
     printf("Received signal SIGILL!!!");
 }
 
-// Signal sets a function to handle a specified signal (int)
+// signal() sets a function to handle a specified signal (int)
 void setup_signal_handlers() {
     signal(SIGINT, sig_sigint);
     signal(SIGQUIT, sig_sigquit);
