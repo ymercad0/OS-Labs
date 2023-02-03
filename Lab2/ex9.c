@@ -16,7 +16,7 @@ int main()
     }
 
     else{
-        // Switched to newly created child process
+        // Runs only the child process
         if (pid==0) {
             // Get relevant PID info
             printf("I am the child, my PID is: %d\n", getpid());
@@ -28,7 +28,7 @@ int main()
             exit(0);
         }
 
-        // Switch over to the parent process
+        // Runs the parent process
         printf("I am the parent, the child's PID is: %d\n", pid);
         wait(&status); // Wait for child process to end before exiting
         exit(0); // exit the parent process after the child has ended
