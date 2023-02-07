@@ -9,6 +9,7 @@
 #include <sys/un.h>
 #include <signal.h>
 #include <stdarg.h>
+#include <sys/wait.h>
 
 // Prototypes for internal functions and utilities
 void error(const char *fmt, ...);
@@ -148,7 +149,6 @@ void client(char *clientName, int numMessages, char *messages[])
         // Open the socket
         /* socket(int domain, int type, int protocol)
         Creates an endpoint for comms and returns a fd that refers to that endpoint.
-
         AF_INET: Address Family for IPv4 that sockets communicate with.
         SOCK_STREAM: TCP Connection protocol which establishes connection between two parties until
                     someone or something disconnects them.
@@ -158,21 +158,16 @@ void client(char *clientName, int numMessages, char *messages[])
 
         /* struct hostent *gethostbyname(const char *hostname)
            Retrieves host information corresponding to a host name from a host database.
-
            struct hostent {
                 char   *h_name       Official name of the host.
-
                 char  **h_aliases    A pointer to an array of pointers to
                                      alternative host names, terminated by a
                                      null pointer.
-
                 int     h_addrtype   Address type.
                 int     h_length     The length, in bytes, of the address.
-
                 char  **h_addr_list  A pointer to an array of pointers to network
                                      addresses (in network byte order) for the host,
                                      terminated by a null pointer.
-
                 char   *h_addr       h_addr_list[0]
             }
         */
@@ -222,11 +217,11 @@ void server()
 
     //Handle SIGINT so the server stops when the main process kills it
     signal(SIGINT, shutdownServer);
-    signal(SIGALRM, exit); // Asynchronous signal raised when a time interval specified in a call to the alarm expires
 
     //Open the socket
     server_socket = socket(AF_INET, SOCK_STREAM, 0); // protocol=0: Protocol to support the socket
-    if(server_socket < 0) error("Error opening the server socket.");
+    if (server_socket < 0)
+        error("Error opening the server socket.");
 
     /* sin_port: Identifies the port to which the application must bind. It must be specified in network byte order.
 
@@ -237,14 +232,15 @@ void server()
 
        sin_family: Must always be set to AF_INET
     */
-    server_addr.sin_port = htons(PORT_NUMBER); // convert IPv4 address in host byte order to IPv4 address in network byte order
-    server_addr.sin_addr.s_addr = INADDR_ANY;
+    bzero((char *) &server_addr, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(PORT_NUMBER); // convert IPv4 address in host byte order to IPv4 address in network byte order
 
     //Bind the socket
     /* int bind(int socket, const struct sockaddr *address, socklen_t address_len);
     */
-    if(bind(server_socket, (struct sockaddr *) &server_addr, sizeof(struct sockaddr_in)) == -1)
+    if (bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0)
         error("Error binding the server socket.\n");
 
     /* int listen(int sockfd, int backlog)
@@ -257,7 +253,7 @@ void server()
     /* int kill(pid_t pid, int sig)
        Used to send any signal to any process.
     */
-    kill(getpid(), SIGUSR1);
+    kill(getppid(), SIGUSR1);
 
     //Accept connection
     client_len = sizeof(server_addr);
@@ -299,6 +295,7 @@ void server()
                     error("Error writing to a client socket.");
 
                 // Sets up elapsed time (10s) before exiting
+                signal(SIGALRM, exit); // Asynchronous signal raised when a time interval specified in a call to the alarm expires
                 alarm(10); // Generates SIGALRM signal after specified amount of time
 
                 // Prints out time waiting
