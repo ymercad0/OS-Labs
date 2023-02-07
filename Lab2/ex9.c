@@ -15,20 +15,20 @@ int main()
         exit(-1);
     }
 
-    else{
-        // Runs only the child process
-        if (pid==0) {
-            // Get relevant PID info
-            printf("I am the child, my PID is: %d\n", getpid());
-            printf("My parent's PID is: %d\n", getppid());
-            // execlp replaces the current process image, meaning anything after won't be executed.
-            // It won't return to the calling process.
-            printf("Still around...\n");
-            execlp("/bin/ps", "ps", NULL);
-            exit(0);
-        }
+    // Runs only the child process
+    else if (pid==0) {
+        // Get relevant PID info
+        printf("I am the child, my PID is: %d\n", getpid());
+        printf("My parent's PID is: %d\n", getppid());
+        // execlp replaces the current process image, meaning anything after won't be executed.
+        // It won't return to the calling process.
+        printf("Still around...\n");
+        execlp("/bin/ps", "ps", NULL);
+        exit(0);
+    }
 
-        // Runs the parent process
+    // Runs the parent process
+    else{
         printf("I am the parent, the child's PID is: %d\n", pid);
         wait(&status); // Wait for child process to end before exiting
         exit(0); // exit the parent process after the child has ended
