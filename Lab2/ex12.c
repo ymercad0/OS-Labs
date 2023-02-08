@@ -57,8 +57,8 @@ int runClient(char *clientName, int numMessages, char **messages) {
     printf("Launching client %s...\n", clientName);
     int forkPID = fork();
     if (forkPID < 0)
-
         error("ERROR forking client %s", clientName);
+
     else if (forkPID == 0) {
         client(clientName, numMessages, messages);
         exit(0);
@@ -141,8 +141,8 @@ void shutdownServer(int signal) {
 void client(char *clientName, int numMessages, char *messages[])
 {
     char buffer[256];
-    struct sockaddr_in client_addr, server_addr;  // Handles internet addresses
-    int client_socket, server_socket;  // File descriptors
+    struct sockaddr_in server_addr;  // Handles internet addresses
+    int client_socket;  // File descriptors
     struct hostent *server;
 
     for (int i = 0; i < numMessages; i++){
@@ -177,7 +177,8 @@ void client(char *clientName, int numMessages, char *messages[])
             exit(0);
         }
 
-        bzero((char *) &server_addr, sizeof(server_addr));
+        // Setup connection to the server, black magic
+        bzero((char *) &server_addr, sizeof(server_addr)); // Resets memory
         server_addr.sin_port = htons(PORT_NUMBER);
         server_addr.sin_family = AF_INET;
         // Copies n bytes from src to dest.
@@ -188,16 +189,16 @@ void client(char *clientName, int numMessages, char *messages[])
            Connects the socket referred to by sockfd to the address specified by addr. The addrlen argument specifies
            the size of addr.
         */
-        if (connect(client_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1)
+        if (connect(client_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0)
             error("Failed to connect to the server.");
 
         //For each message, write to the server
         strcpy(buffer, messages[i]);
-        if (write(client_socket, buffer, 255) == -1) error("Error writing back to the server.");
+        if (write(client_socket, buffer, 255) < 0) error("Error writing back to the server.");
 
         // And read the response
         bzero(buffer, 256);
-        if (read(client_socket, buffer, 255) == -1) error("Error reading back to the server.");
+        if (read(client_socket, buffer, 255) < 0) error("Error reading back to the server.");
 
         // Print out the response
         fprintf(stdout, "Client %s(%d): Return message: %s\n", clientName, getpid(), buffer);
@@ -217,11 +218,11 @@ void server()
 
     //Handle SIGINT so the server stops when the main process kills it
     signal(SIGINT, shutdownServer);
+    signal(SIGALRM, exit); // Asynchronous signal raised when a time interval specified in a call to the alarm expires
 
     //Open the socket
     server_socket = socket(AF_INET, SOCK_STREAM, 0); // protocol=0: Protocol to support the socket
-    if (server_socket < 0)
-        error("Error opening the server socket.");
+    if (server_socket < 0) error("Error opening the server socket.");
 
     /* sin_port: Identifies the port to which the application must bind. It must be specified in network byte order.
 
@@ -232,10 +233,10 @@ void server()
 
        sin_family: Must always be set to AF_INET
     */
-    bzero((char *) &server_addr, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
+    bzero((char *) &server_addr, sizeof(server_addr)); // Resets memory
     server_addr.sin_port = htons(PORT_NUMBER); // convert IPv4 address in host byte order to IPv4 address in network byte order
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_family = AF_INET;
 
     //Bind the socket
     /* int bind(int socket, const struct sockaddr *address, socklen_t address_len);
@@ -281,7 +282,7 @@ void server()
                 /* int read(int s, char *buf, int len)
                    Reads data on a socket with descriptor s and stores it in a buffer.
                 */
-                if(read(client_socket, buffer, 255) == -1) // Messages must end in \0
+                if(read(client_socket, buffer, 255) < 0) // Messages must end in \0
                     error("Error reading from client socket.");
 
                 fprintf(stdout, "Server child(%d): got message: %s\n", getpid(), buffer);
@@ -291,11 +292,10 @@ void server()
                    Writes up to count bytes from the buffer starting at buf to the file referred to by the
                    file descriptor fd.
                 */
-                if(write(client_socket, buffer, 255) == -1)  // Writes message back to the client socket
+                if(write(client_socket, buffer, 255) < 0)  // Writes message back to the client socket
                     error("Error writing to a client socket.");
 
                 // Sets up elapsed time (10s) before exiting
-                signal(SIGALRM, exit); // Asynchronous signal raised when a time interval specified in a call to the alarm expires
                 alarm(10); // Generates SIGALRM signal after specified amount of time
 
                 // Prints out time waiting
