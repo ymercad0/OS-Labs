@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "type_traits": "c",
+        "stdlib.h": "c",
+        "pthread.h": "c"
+    }
+}
