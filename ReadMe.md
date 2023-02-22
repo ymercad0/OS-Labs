@@ -8,3 +8,4 @@ All labs were implemented in C and compiled/run from VSCode with the proper exte
 | Lab #1               | Introduction to C & Memory Management             |
 | Lab #2               | Signals, Sockets, & IPC                           |
 | Lab #3               | Synchronization                                   |
+| Lab #4               | Minix System Calls                                |
