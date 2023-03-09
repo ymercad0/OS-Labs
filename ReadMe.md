@@ -1,6 +1,6 @@
 # OS Labs
 Course laboratories from CIIC4050 (Operating Systems). <br> <br>
-All labs were implemented in C and compiled/run from VSCode with the proper extensions.
+All labs were implemented in C and compiled/run from VSCode with the proper extensions. Any file(s) that can't be run locally must be compiled from MINIX and run there.
 
 ## Labs
 | Lab #                | Lab Description                                   |
