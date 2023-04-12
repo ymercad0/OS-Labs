@@ -10,3 +10,4 @@ All labs were implemented in C and compiled/run from VSCode with the proper exte
 | Lab #3               | Synchronization                                   |
 | Lab #4               | Minix System Calls                                |
 | Lab #5               | Minix Kernel Calls                                |
+| Lab #6               | Virtual Memory Allocation                         |
