@@ -1,0 +1,92 @@
+Problem 2
+---------
+5 Attributes: Process ID, Process priority, Privilidges (uid & gid), Parent/child indeces, Flag values
+
+Problem 3
+---------
+On GitHub, it lists references to variables for you:
+https://github.com/0xffea/MINIX3/blob/master/lib/libc/sys-minix/getpid.c
+https://github.com/0xffea/MINIX3/blob/master/lib/libc/sys-minix/getppid.c
+
+Steps: 
+Find the macro under https://github.com/0xffea/MINIX3/blob/master/include/minix/callnr.h#L23. Compare
+the number to the value under https://github.com/Stichting-MINIX-Research-Foundation/minix/blob/master/minix/servers/pm/table.c.
+For both functions this is mapped to https://github.com/Stichting-MINIX-Research-Foundation/minix/blob/master/minix/servers/pm/table.c#L18C2-L18C48. 
+Cross reference do_get and discover: https://github.com/Stichting-MINIX-Research-Foundation/minix/blob/master/minix/servers/pm/getset.c#L16
+
+Solution:
+/*===========================================================================*
+ *				do_get					     *
+ *===========================================================================*/
+int
+do_get(void)
+{
+/* Handle PM_GETUID, PM_GETGID, PM_GETGROUPS, PM_GETPID, PM_GETPGRP, PM_GETSID,
+ * PM_ISSETUGID.
+ */
+  register struct mproc *rmp = mp;
+  int r;
+  int ngroups;
+
+  switch(call_nr) {
+	case PM_GETGROUPS:
+		ngroups = m_in.m_lc_pm_groups.num;
+		if (ngroups > NGROUPS_MAX || ngroups < 0)
+			return(EINVAL);
+
+		if (ngroups == 0) {
+			r = rmp->mp_ngroups;
+			break;
+		}
+
+		if (ngroups < rmp->mp_ngroups)
+			/* Asking for less groups than available */
+			return(EINVAL);
+
+		r = sys_datacopy(SELF, (vir_bytes) rmp->mp_sgroups, who_e,
+			m_in.m_lc_pm_groups.ptr, ngroups * sizeof(gid_t));
+
+		if (r != OK)
+			return(r);
+
+		r = rmp->mp_ngroups;
+		break;
+	case PM_GETUID:
+		r = rmp->mp_realuid;
+		rmp->mp_reply.m_pm_lc_getuid.euid = rmp->mp_effuid;
+		break;
+
+	case PM_GETGID:
+		r = rmp->mp_realgid;
+		rmp->mp_reply.m_pm_lc_getgid.egid = rmp->mp_effgid;
+		break;
+
+	case PM_GETPID:
+		r = mproc[who_p].mp_pid;
+		rmp->mp_reply.m_pm_lc_getpid.parent_pid = mproc[rmp->mp_parent].mp_pid;
+		break;
+
+	case PM_GETPGRP:
+		r = rmp->mp_procgrp;
+		break;
+
+	case PM_GETSID:
+	{
+		struct mproc *target;
+		pid_t p = m_in.m_lc_pm_getsid.pid;
+		target = p ? find_proc(p) : &mproc[who_p];
+		r = ESRCH;
+		if(target)
+			r = target->mp_procgrp;
+		break;
+	}
+	case PM_ISSETUGID:
+		r = !!(rmp->mp_flags & TAINTED);
+		break;
+
+	default:
+		r = EINVAL;
+		break;
+  }
+  return(r);
+}
